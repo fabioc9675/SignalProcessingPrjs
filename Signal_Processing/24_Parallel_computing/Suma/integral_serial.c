@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <time.h>
 
 int main() {
@@ -11,23 +12,20 @@ int main() {
 
     double posx, posy, posz, fval;
     double sum = 0.0;
-    int count = 0;
+    double dV = 0.1 * 0.1 * 0.1; // Ajusta según tu grilla
+    clock_t start = clock();
 
-    // Leer los datos y acumular la suma
-    while (fscanf(file, "%lf %lf %lf %lf", &posx, &posy, &posz, &fval) == 4) 
-    {
-        sum += fval;
-        count ++;
+    while (fscanf(file, "%lf %lf %lf %lf", &posx, &posy, &posz, &fval) == 4) {
+        double r = sqrt(posx*posx + posy*posy + posz*posz);
+        if (r > 1e-9) { // Evita división por cero
+            sum += (fval / r) * dV;
+        }
     }
 
     fclose(file);
+    double time_spent = (double)(clock() - start) / CLOCKS_PER_SEC;
 
-    // Asumir dV constante
-    double dV = 0.1 * 0.1 * 0.1;
-    double integral = sum * dV;
-
-    printf("Integral (Serial): %.6f\n", integral);
-    printf("Tiempo estimado: Usar time ./integral_serial\n");
-
+    printf("Integral (Serial): %.6f\n", sum);
+    printf("Tiempo: %.6f segundos\n", time_spent);
     return 0;
 }
