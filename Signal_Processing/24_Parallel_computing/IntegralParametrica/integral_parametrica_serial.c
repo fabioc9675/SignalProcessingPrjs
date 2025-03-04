@@ -35,7 +35,7 @@ double compute_distance(Point p1, Point p2) {
 }
 
 int main() {
-    clock_t start = clock();
+    clock_t start = omp_get_wtime();
 
     // Leer data1.txt
     FILE *file1 = fopen("data1.txt", "r");
@@ -64,7 +64,7 @@ int main() {
     double dV1 = 0.4 * 0.4 * 0.4, dV2 = 0.4 * 0.4 * 0.4;
     double totals[30] = {0.0}; // Resultados para los 30 parámetros
     
-    clock_t start_int = clock();
+    clock_t start_int = omp_get_wtime();
 
     double xnorm_e[30] = {0.0}, xnorm_h[30] = {0.0};
     for (int k = 0; k < 30; k++) {
@@ -88,7 +88,7 @@ int main() {
             }
         }
         totals[k] *= constante; // Escalar a meV
-        printf("Parámetro %d: %.6e meV, time: %.2f seg\n", k+1, totals[k], (double)(clock() - start_int) / CLOCKS_PER_SEC);
+        printf("Parámetro %d: %.6e meV, time: %.2f seg\n", k+1, totals[k], (double)(clock() - start) / CLOCKS_PER_SEC);
         start_int = clock();
     }
 

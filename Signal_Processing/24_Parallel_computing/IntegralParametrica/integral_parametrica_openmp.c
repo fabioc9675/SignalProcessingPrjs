@@ -39,6 +39,11 @@ double compute_distance(Point p1, Point p2) {
 int main() {
     // Leer datos (similar a la versión serial)
     // Leer data1.txt
+
+    double start = omp_get_wtime();
+    double start_int = omp_get_wtime();
+    double total_start = omp_get_wtime();
+    
     FILE *file1 = fopen("data1.txt", "r");
     Point *data1 = malloc(19783 * sizeof(Point));
     int N = 0;
@@ -62,11 +67,11 @@ int main() {
     }
     fclose(file2);
 
+    printf("Tiempo lectura file: %.6f segundos\n", (double)(omp_get_wtime() - start_int));
+    start_int = omp_get_wtime();
+
     double dV1 = 0.4 * 0.4 * 0.4, dV2 = 0.4 * 0.4 * 0.4;
-    double totals[30] = {0.0};
-    double start = omp_get_wtime();
     
-    clock_t start_int = clock();
 
     double xnorm_e[30] = {0.0}, xnorm_h[30] = {0.0};
     // Calcular normas en paralelo
@@ -76,36 +81,52 @@ int main() {
         for(int j=0; j<M; j++) xnorm_h[k] += pow(data2[j].fval_e[k], 2) * dV2;
     }
 
-    printf("Tiempo integral norm: %.2f segundos\n", (double)(clock() - start_int) / CLOCKS_PER_SEC);
-    start_int = clock();
+    printf("Tiempo integral norm: %.6f segundos\n", (double)(omp_get_wtime() - start_int));
+    start_int = omp_get_wtime();
 
-    // Paralelizar cálculo principal
-    #pragma omp parallel for collapse(2) schedule(dynamic)
-    for(int k=0; k<30; k++) {
-        for(int i=0; i<N; i++) {
-            double private_totals[30] = {0};
-            for(int j=0; j<M; j++) {
+    // Cálculo principal paralelo con tiempos por parámetro
+    double totals[30] = {0};
+    double param_times[30] = {0};
+    
+    #pragma omp parallel for schedule(dynamic)
+    for(int k = 0; k < 30; k++) {
+        double param_start = omp_get_wtime();
+        
+        double xnorm_e = 0, xnorm_h = 0;
+        for(int i = 0; i < N; i++) xnorm_e += pow(data1[i].fval_e[k], 2) * dV1;
+        for(int j = 0; j < M; j++) xnorm_h += pow(data2[j].fval_e[k], 2) * dV2;
+
+        double sum = 0.0;
+        for(int i = 0; i < N; i++) {
+            double psi1_sq = pow(data1[i].fval_e[k], 2)/xnorm_e;
+            
+            for(int j = 0; j < M; j++) {
                 double r = compute_distance(data1[i], data2[j]);
                 if(r < 1e-15) continue;
                 
-                double psi1_sq = pow(data1[i].fval_e[k], 2)/xnorm_e[k];
-                double psi2_sq = pow(data2[j].fval_e[k], 2)/xnorm_h[k];
-                private_totals[k] += (psi1_sq * psi2_sq) / r * dV1 * dV2;
+                double psi2_sq = pow(data2[j].fval_e[k], 2)/xnorm_h;
+                sum += (psi1_sq * psi2_sq) / r * dV1 * dV2;
             }
-            #pragma omp critical
-            totals[k] += private_totals[k];
         }
-        
+        totals[k] = sum * constante;
+        param_times[k] = omp_get_wtime() - param_start;
+
+        #pragma omp critical
+        {
+            printf("[P] Parámetro %02d (xb=%.1f): %.3e meV [T: %.2f s]\n", 
+                  k+1, (k+1)*0.1, totals[k], param_times[k]);
+        }
     }
 
-    // Aplicar constante y mostrar resultados
-    for(int k=0; k<30; k++) {
-        totals[k] *= constante;
-        printf("Parámetro %d: %.6e meV\n", k+1, totals[k]);
+    // Guardar resultados en archivo .dat
+    FILE *output = fopen("resultados.dat", "w");
+    fprintf(output, "# xb\t\tTotal (meV)\n");
+    for(int k = 0; k < 30; k++) {
+        fprintf(output, "%.1f\t%.6e\n", (k+1)*0.1, totals[k]);
     }
-    
-    printf("Tiempo: %.2f segundos\n", omp_get_wtime() - start);
-    free(data1);
-    free(data2);
+    fclose(output);
+
+    printf("\n[T] Tiempo total: %.2f segundos\n", omp_get_wtime()-total_start);
+    free(data1); free(data2);
     return 0;
 }
