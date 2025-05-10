@@ -35,7 +35,6 @@ The code is written in `Python 3.10`, using libraries such as `NumPy`, `SciPy`, 
 
 ### Repository Structure
 
-
 ```
 22_Fitzhut_Nagumo/
 ├── FHN_Model/                    # Core simulation code
@@ -68,6 +67,8 @@ The code is written in `Python 3.10`, using libraries such as `NumPy`, `SciPy`, 
 │   ├── SweepParameters_e.ipynb   
 │   ├── SweepParameters_k.ipynb   
 │   ├── output/
+├── Spatial_2D_Model                # 2D implementation un COMSOL
+│   ├── Heart_2D_FHN.mph   
 ├── requirements.txt                # Python dependencies
 └── LICENSE                         # GPL-3.0 License
 └── README.md                       # README.md
